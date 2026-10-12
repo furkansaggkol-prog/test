@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🍓 Çilek — Özel Oda</title>
+
+  <!-- PeerJS CDN -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+  <!-- Romantic Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --strawberry:     #e63946;
+      --strawberry-dk:  #b5212d;
+      --strawberry-lt:  #ff6b7a;
+      --pink:           #ff8fa3;
+      --pink-soft:      #ffb3c1;
+      --blush:          #ffccd5;
+      --leaf:           #4a7c59;
+      --leaf-lt:        #6dbf7b;
+      --bg-deep:        #110a0d;
+      --bg:             #1a0e13;
+      --surface:        rgba(40, 15, 25, .75);
+      --surface-glass:  rgba(60, 20, 35, .45);
+      --text:           #fce4ec;
+      --text-dim:       #c9889a;
+      --gold:           #ffd700;
+      --radius:         16px;
+      --font-romantic:  'Dancing Script', cursive;
+      --font-body:      'Inter', system-ui, sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font-body);
+      background: var(--bg-deep);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 15% 85%, rgba(230,57,70,.18) 0%, transparent 65%),
+        radial-gradient(ellipse 60% 50% at 85% 15%, rgba(255,107,122,.12) 0%, transparent 60%),
+        radial-gradient(ellipse 90% 70% at 50% 50%, rgba(181,33,45,.06) 0%, transparent 80%);
+      pointer-events: none; z-index: 0;
+    }
+
+    .floaters { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .floater {
+      position: absolute; font-size: 1.4rem; opacity: 0;
+      animation: floatUp linear infinite; filter: blur(0.5px);
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(100vh) rotate(0deg) scale(.7); opacity: 0; }
+      10%  { opacity: .35; }
+      90%  { opacity: .25; }
+      100% { transform: translateY(-10vh) rotate(360deg) scale(1); opacity: 0; }
+    }
+
+    #app { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100vh; }
+
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 24px;
+      background: linear-gradient(180deg, rgba(40,15,25,.92), rgba(26,14,19,.85));
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(230,57,70,.2);
+      flex-shrink: 0; gap: 12px; flex-wrap: wrap;
+    }
+    .topbar .logo {
+      font-family: var(--font-romantic); font-size: 1.7rem; font-weight: 700;
+      color: var(--strawberry-lt);
+      display: flex; align-items: center; gap: 8px;
+      text-shadow: 0 0 20px rgba(230,57,70,.4);
+    }
+    .topbar .logo .icon-strawberry {
+      font-size: 1.8rem;
+      filter: drop-shadow(0 0 8px rgba(230,57,70,.5));
+      animation: gentleBob 3s ease-in-out infinite;
+    }
+    @keyframes gentleBob {
+      0%, 100% { transform: translateY(0) rotate(-5deg); }
+      50%      { transform: translateY(-4px) rotate(5deg); }
+    }
+
+    .server-status {
+      display: flex; align-items: center; gap: 6px;
+      font-size: .72rem; color: var(--text-dim);
+      padding: 4px 10px; border-radius: 8px; background: rgba(0,0,0,.3);
+    }
+    .server-status .sdot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+    .sdot-ok   { background: #2ecc71; box-shadow: 0 0 6px rgba(46,204,113,.6); }
+    .sdot-wait { background: var(--gold); animation: pulse 1.5s infinite; }
+    .sdot-err  { background: #e74c3c; }
+
+    .id-section { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .id-label { color: var(--text-dim); font-size: .82rem; font-style: italic; }
+    .id-badge {
+      background: rgba(230,57,70,.12); border: 1px solid rgba(230,57,70,.35);
+      border-radius: 12px; padding: 8px 18px;
+      font-family: 'Consolas', 'Fira Code', monospace;
+      font-size: 1rem; letter-spacing: 3px; color: var(--pink-soft);
+      user-select: all; cursor: pointer; transition: all .3s;
+      text-shadow: 0 0 12px rgba(255,179,193,.3);
+    }
+    .id-badge:hover {
+      border-color: var(--pink); background: rgba(230,57,70,.2);
+      box-shadow: 0 0 20px rgba(230,57,70,.15);
+    }
+
+    .btn-copy {
+      background: none; border: 1px solid rgba(255,143,163,.2);
+      color: var(--text-dim); border-radius: 10px; padding: 7px 14px;
+      cursor: pointer; font-size: .8rem; transition: all .25s;
+    }
+    .btn-copy:hover { border-color: var(--pink); color: var(--pink); }
+
+    .connect-group { display: flex; align-items: center; gap: 8px; }
+    .connect-group input {
+      background: rgba(60,20,35,.6); border: 1px solid rgba(255,143,163,.15);
+      border-radius: 12px; padding: 10px 16px; color: var(--text);
+      font-size: .95rem; width: 185px; outline: none; transition: all .3s;
+      font-family: 'Consolas', monospace; letter-spacing: 2px;
+      backdrop-filter: blur(8px);
+    }
+    .connect-group input:focus {
+      border-color: var(--strawberry-lt);
+      box-shadow: 0 0 16px rgba(230,57,70,.15);
+    }
+    .connect-group input::placeholder {
+      color: var(--text-dim); letter-spacing: 0;
+      font-family: var(--font-body); font-style: italic;
+    }
+
+    .btn {
+      border: none; border-radius: var(--radius); padding: 10px 22px;
+      font-size: .9rem; font-weight: 600; cursor: pointer; transition: all .3s;
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--font-body);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--strawberry), var(--strawberry-dk));
+      color: #fff; box-shadow: 0 4px 20px rgba(230,57,70,.35);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(230,57,70,.5);
+      background: linear-gradient(135deg, var(--strawberry-lt), var(--strawberry));
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+      background: var(--surface-glass); color: var(--text);
+      border: 1px solid rgba(255,143,163,.15); backdrop-filter: blur(8px);
+    }
+    .btn-secondary:hover { border-color: var(--pink); background: rgba(60,20,35,.65); }
+    .btn-danger {
+      background: linear-gradient(135deg, #8b0000, #5c0011);
+      color: #ffccd5; box-shadow: 0 4px 16px rgba(139,0,0,.35);
+    }
+    .btn-danger:hover { box-shadow: 0 6px 24px rgba(139,0,0,.55); }
+
+    .controls {
+      display: flex; align-items: center; justify-content: center;
+      gap: 14px; padding: 14px 24px;
+      background: rgba(40,15,25,.6); backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(230,57,70,.1);
+      flex-shrink: 0; flex-wrap: wrap;
+    }
+    .quality-select {
+      background: rgba(60,20,35,.6); border: 1px solid rgba(255,143,163,.15);
+      border-radius: 12px; padding: 10px 16px; color: var(--text);
+      font-size: .88rem; outline: none; cursor: pointer; transition: all .3s;
+      backdrop-filter: blur(8px); font-family: var(--font-body);
+    }
+    .quality-select:focus { border-color: var(--strawberry-lt); }
+    .quality-select option { background: #2a0f1a; color: var(--text); }
+
+    .stage {
+      flex: 1; position: relative; display: flex;
+      align-items: center; justify-content: center; overflow: hidden;
+      background: radial-gradient(ellipse at center, rgba(40,15,25,.5) 0%, var(--bg-deep) 100%);
+    }
+    .stage::after {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at center, transparent 50%, rgba(17,10,13,.7) 100%);
+      pointer-events: none; z-index: 2;
+    }
+    .stage .placeholder { text-align: center; color: var(--text-dim); user-select: none; z-index: 3; }
+    .stage .placeholder .icon {
+      font-size: 5rem; margin-bottom: 20px;
+      filter: drop-shadow(0 0 24px rgba(230,57,70,.3));
+      animation: gentleBob 4s ease-in-out infinite;
+    }
+    .stage .placeholder p { font-size: 1rem; line-height: 1.8; max-width: 420px; color: var(--text-dim); }
+    .stage .placeholder p strong { color: var(--pink); }
+    .stage .placeholder .romantic-quote {
+      font-family: var(--font-romantic); font-size: 1.2rem;
+      color: var(--pink-soft); margin-top: 16px; opacity: .7;
+    }
+
+    #remoteScreen { width: 100%; height: 100%; object-fit: contain; display: none; z-index: 1; }
+
+    .pip-container {
+      position: absolute; bottom: 24px; right: 24px;
+      display: flex; flex-direction: column; gap: 12px; z-index: 10;
+    }
+    .pip-wrap { position: relative; display: none; }
+    .pip-wrap.active { display: block; }
+    .pip-video {
+      width: 200px; height: 150px; object-fit: cover;
+      border-radius: 18px; border: 2px solid rgba(230,57,70,.45);
+      box-shadow: 0 8px 32px rgba(0,0,0,.6), 0 0 20px rgba(230,57,70,.15);
+      background: rgba(17,10,13,.8); display: none; transition: all .3s;
+    }
+    .pip-video:hover { border-color: var(--pink); }
+    .pip-label {
+      position: absolute; bottom: 8px; left: 12px;
+      background: rgba(40,15,25,.75); color: var(--pink-soft);
+      font-size: .7rem; padding: 3px 10px; border-radius: 8px;
+      pointer-events: none; backdrop-filter: blur(6px);
+      border: 1px solid rgba(230,57,70,.2); font-style: italic;
+    }
+
+    .statusbar {
+      padding: 8px 24px; text-align: center; font-size: .78rem;
+      color: var(--text-dim); background: rgba(26,14,19,.92);
+      border-top: 1px solid rgba(230,57,70,.08); flex-shrink: 0; font-style: italic;
+    }
+    .statusbar .dot {
+      display: inline-block; width: 8px; height: 8px;
+      border-radius: 50%; margin-right: 8px; vertical-align: middle;
+    }
+    .dot-waiting   { background: var(--pink); animation: pulse 1.8s ease-in-out infinite; box-shadow: 0 0 8px rgba(255,143,163,.5); }
+    .dot-connected { background: var(--leaf-lt); box-shadow: 0 0 8px rgba(109,191,123,.5); }
+    .dot-off       { background: #553; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: .35; transform: scale(.85); }
+    }
+
+    .toast {
+      position: fixed; top: 24px; left: 50%;
+      transform: translateX(-50%) translateY(-90px);
+      background: rgba(40,15,25,.9); border: 1px solid var(--strawberry);
+      border-radius: 14px; padding: 14px 30px; color: var(--text);
+      font-size: .9rem; z-index: 999; opacity: 0;
+      transition: all .45s cubic-bezier(.34,1.56,.64,1);
+      pointer-events: none; max-width: 90vw;
+      box-shadow: 0 8px 32px rgba(0,0,0,.55); backdrop-filter: blur(16px);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    @media (max-width: 700px) {
+      .topbar { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .pip-video { width: 120px; height: 90px; border-radius: 14px; }
+      .pip-container { bottom: 12px; right: 12px; gap: 8px; }
+      .controls { gap: 8px; padding: 10px 16px; }
+      .btn { padding: 9px 14px; font-size: .82rem; }
+      .topbar .logo { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="floaters" id="floaters"></div>
+
+<div id="app">
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <div class="logo">
+        <span class="icon-strawberry">🍓</span> Çilek
+      </div>
+      <div class="server-status" id="serverStatus">
+        <span class="sdot sdot-wait" id="serverDot"></span>
+        <span id="serverText">Sunucuya bağlanıyor…</span>
+      </div>
+    </div>
+
+    <div class="id-section">
+      <span class="id-label">Oda Kodun:</span>
+      <div class="id-badge" id="myIdBadge" title="Kopyalamak için tıkla">—</div>
+      <button class="btn-copy" id="btnCopy" title="Kodu kopyala">📋 Kopyala</button>
+    </div>
+
+    <div class="connect-group">
+      <input type="text" id="remoteIdInput" placeholder="Sevgilinin kodu…" maxlength="12" autocomplete="off" spellcheck="false" />
+      <button class="btn btn-primary" id="btnConnect" disabled>💕 Bağlan</button>
+      <button class="btn btn-danger" id="btnDisconnect" style="display:none;">✖ Kes</button>
+    </div>
+  </header>
+
+  <div class="controls">
+    <button class="btn btn-primary" id="btnCamera">🎥 Kamerayı Aç</button>
+    <select class="quality-select" id="qualitySelect">
+      <option value="720-30">720p · 30 FPS</option>
+      <option value="720-60">720p · 60 FPS</option>
+      <option value="1080-30" selected>1080p · 30 FPS</option>
+      <option value="1080-60">1080p · 60 FPS</option>
+    </select>
+    <button class="btn btn-primary" id="btnScreen">🖥️ Ekran Paylaş</button>
+    <button class="btn btn-secondary" id="btnMute">🔇 Sessiz</button>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="placeholder" id="placeholder">
+      <div class="icon">🍓</div>
+      <p>Karşı tarafın <strong>oda kodunu</strong> gir ve <strong>Bağlan</strong>'a bas.<br/>Ardından kameranı aç ya da ekranını paylaş.</p>
+      <div class="romantic-quote">❝ Seninle her ekran, bir sinema… ❞</div>
+    </div>
+    <video id="remoteScreen" autoplay playsinline></video>
+    <div class="pip-container">
+      <div class="pip-wrap" id="localPipWrap">
+        <video class="pip-video" id="localVideo" autoplay playsinline muted></video>
+        <span class="pip-label">🍓 Sen</span>
+      </div>
+      <div class="pip-wrap" id="remotePipWrap">
+        <video class="pip-video" id="remoteCamVideo" autoplay playsinline></video>
+        <span class="pip-label">💕 Sevgilin</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusbar" id="statusbar">
+    <span class="dot dot-waiting" id="statusDot"></span>
+    <span id="statusText">Sunucuya bağlanıyor…</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── Floating particles ── */
+  (function() {
+    var c = document.getElementById('floaters');
+    var e = ['🍓','💕','❤️','🍓','💗','🍓','✨','🍓','💖','🌹','🍓','💝'];
+    for (var i = 0; i < 18; i++) {
+      var el = document.createElement('span');
+      el.className = 'floater';
+      el.textContent = e[Math.floor(Math.random() * e.length)];
+      el.style.left = Math.random() * 100 + '%';
+      el.style.fontSize = (0.8 + Math.random() * 1.2) + 'rem';
+      el.style.animationDuration = (12 + Math.random() * 20) + 's';
+      el.style.animationDelay = (Math.random() * 18) + 's';
+      c.appendChild(el);
+    }
+  })();
+
+  /* ═══════════════════════════════════
+     SERVER CONFIGURATION
+     
+     PeerJS client otomatik olarak path'in
+     sonuna "/peerjs" ekler. Sunucuda path
+     "/peerjs" olduğu için client path'i
+     "/" olmalıdır → sonuç: /peerjs
+     ═══════════════════════════════════ */
+  function getServerConfig() {
+    var loc = window.location;
+    var isLocalFile = loc.protocol === 'file:';
+
+    if (isLocalFile) {
+      return { useCloud: true };
+    }
+
+    // Kendi sunucumuz (Render, VPS vb.)
+    return {
+      useCloud: false,
+      host: loc.hostname,
+      port: loc.port ? parseInt(loc.port) : (loc.protocol === 'https:' ? 443 : 80),
+      path: '/',
+      secure: loc.protocol === 'https:'
+    };
+  }
+
+  /* ── Sunucudaki peer listesini kontrol et ── */
+  function checkPeerOnServer(peerId, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/api/peers', true);
+    xhr.timeout = 5000;
+    xhr.onload = function() {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        var peers = data.connected_peers || [];
+        console.log('📡 Sunucudaki peer\'ler:', peers);
+        callback(peers.indexOf(peerId) !== -1, peers);
+      } catch(e) {
+        callback(false, []);
+      }
+    };
+    xhr.onerror = function() { callback(false, []); };
+    xhr.ontimeout = function() { callback(false, []); };
+    xhr.send();
+  }
+
+  /* ── Helpers ── */
+  function genId() {
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    var id = '';
+    for (var i = 0; i < 6; i++) id += chars[Math.floor(Math.random() * chars.length)];
+    return id;
+  }
+
+  function toast(msg, ms) {
+    ms = ms || 3000;
+    var el = document.getElementById('toast');
+    el.textContent = '🍓 ' + msg;
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t = setTimeout(function() { el.classList.remove('show'); }, ms);
+  }
+
+  function setStatus(text, type) {
+    document.getElementById('statusText').textContent = text;
+    var dot = document.getElementById('statusDot');
+    dot.className = 'dot';
+    if (type === 'connected') dot.classList.add('dot-connected');
+    else if (type === 'waiting') dot.classList.add('dot-waiting');
+    else dot.classList.add('dot-off');
+  }
+
+  function setServerStatus(text, type) {
+    document.getElementById('serverText').textContent = text;
+    var dot = document.getElementById('serverDot');
+    dot.className = 'sdot';
+    if (type === 'ok') dot.classList.add('sdot-ok');
+    else if (type === 'wait') dot.classList.add('sdot-wait');
+    else dot.classList.add('sdot-err');
+  }
+
+  function getQualityConstraints() {
+    var val = document.getElementById('qualitySelect').value;
+    var parts = val.split('-');
+    var res = parseInt(parts[0], 10);
+    var fps = parseInt(parts[1], 10);
+    return {
+      width:     { ideal: res === 720 ? 1280 : 1920 },
+      height:    { ideal: res },
+      frameRate: { ideal: fps }
+    };
+  }
+
+  /* ── ICE Servers ── */
+  var iceConfig = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
+      { urls: 'stun:global.stun.twilio.com:3478' },
+      { urls: 'stun:openrelay.metered.ca:80' },
+      {
+        urls: 'turn:openrelay.metered.ca:80',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:80?transport=tcp',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turns:openrelay.metered.ca:443',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      }
+    ],
+    iceCandidatePoolSize: 10
+  };
+
+  /* ── State ── */
+  var myId = genId();
+  var peer = null;
+  var currentConn = null;
+  var localCamStream = null;
+  var localScreenStream = null;
+  var outgoingCalls = [];
+  var isMuted = false;
+  var cameraOn = false;
+  var screenOn = false;
+  var remotePeerId = null;
+  var isConnecting = false;
+  var retryCount = 0;
+  var maxRetries = 5;
+  var retryTimer = null;
+  var connectTimeout = null;
+  var keepaliveInterval = null;
+  var serverReady = false;
+  var peerDestroyCount = 0;
+
+  /* ── DOM ── */
+  var $myId       = document.getElementById('myIdBadge');
+  var $remoteIn   = document.getElementById('remoteIdInput');
+  var $btnConnect = document.getElementById('btnConnect');
+  var $btnDisc    = document.getElementById('btnDisconnect');
+  var $btnCamera  = document.getElementById('btnCamera');
+  var $btnScreen  = document.getElementById('btnScreen');
+  var $btnMute    = document.getElementById('btnMute');
+  var $btnCopy    = document.getElementById('btnCopy');
+  var $localVid   = document.getElementById('localVideo');
+  var $remoteScr  = document.getElementById('remoteScreen');
+  var $remoteCam  = document.getElementById('remoteCamVideo');
+  var $localPip   = document.getElementById('localPipWrap');
+  var $remotePip  = document.getElementById('remotePipWrap');
+  var $placeholder = document.getElementById('placeholder');
+
+  /* ── Error messages ── */
+  var errorMessages = {
+    'peer-unavailable':     'Karşı taraf çevrimiçi değil veya kod yanlış.',
+    'unavailable-id':       'Bu kod kullanılıyor, yeni kod alınıyor…',
+    'browser-incompatible': 'Tarayıcın WebRTC desteklemiyor. Chrome kullan.',
+    'disconnected':         'Sunucu bağlantısı kesildi, yeniden bağlanılıyor…',
+    'network':              'Ağ hatası — interneti kontrol et.',
+    'server-error':         'Sunucuya ulaşılamıyor…',
+    'socket-error':         'Sunucu bağlantısı kurulamadı…',
+    'socket-closed':        'Sunucu bağlantısı kapandı…'
+  };
+
+  /* ══════════════════════════════════════
+     PeerJS INIT
+     ══════════════════════════════════════ */
+  function initPeer() {
+    serverReady = false;
+    setServerStatus('Sunucuya bağlanıyor…', 'wait');
+    $btnConnect.disabled = true;
+
+    var serverCfg = getServerConfig();
+    var peerOptions;
+
+    if (serverCfg.useCloud) {
+      peerOptions = {
+        debug: 3,
+        config: iceConfig
+      };
+      console.log('☁️ PeerJS Cloud modunda başlatılıyor…');
+    } else {
+      peerOptions = {
+        host: serverCfg.host,
+        port: serverCfg.port,
+        path: serverCfg.path,
+        secure: serverCfg.secure,
+        debug: 3,
+        config: iceConfig,
+        key: 'peerjs'
+      };
+      console.log('🖥️ Özel sunucu modunda başlatılıyor:', serverCfg);
+    }
+
+    try {
+      peer = new Peer(myId, peerOptions);
+    } catch (e) {
+      console.error('Peer creation failed:', e);
+      setServerStatus('Peer oluşturulamadı', 'err');
+      retryPeerInit();
+      return;
+    }
+
+    peer.on('open', function(id) {
+      myId = id;
+      $myId.textContent = id;
+      $btnConnect.disabled = false;
+      serverReady = true;
+      peerDestroyCount = 0;
+
+      var mode = getServerConfig().useCloud ? '(PeerJS Cloud)' : '(Özel Sunucu)';
+      setServerStatus('Sunucu bağlı ✓ ' + mode, 'ok');
+      setStatus('Hazır — Kodunu sevgiline gönder 💕', 'waiting');
+      console.log('✅ PeerJS connected. ID:', id, mode);
+
+      clearInterval(keepaliveInterval);
+      keepaliveInterval = setInterval(function() {
+        if (peer && peer.disconnected && !peer.destroyed) {
+          console.log('⚠️ Keepalive: reconnecting...');
+          try { peer.reconnect(); } catch(e) {}
+        }
+      }, 10000);
+    });
+
+    peer.on('error', function(err) {
+      console.error('PeerJS error:', err.type, err.message);
+      var msg = errorMessages[err.type] || ('Hata: ' + err.message);
+
+      if (err.type === 'unavailable-id') {
+        toast(msg, 4000);
+        myId = genId();
+        destroyAndReinit();
+        return;
+      }
+
+      if (err.type === 'peer-unavailable') {
+        toast(msg, 4000);
+        return;
+      }
+
+      if (err.type === 'disconnected' || err.type === 'network' ||
+          err.type === 'server-error' || err.type === 'socket-error' ||
+          err.type === 'socket-closed') {
+        toast(msg, 4000);
+        serverReady = false;
+        setServerStatus('Yeniden bağlanılıyor…', 'wait');
+        setTimeout(function() {
+          if (peer && !peer.destroyed) {
+            try { peer.reconnect(); } catch(e) { destroyAndReinit(); }
+          } else {
+            destroyAndReinit();
+          }
+        }, 2000);
+        return;
+      }
+
+      toast(msg, 4000);
+    });
+
+    peer.on('disconnected', function() {
+      serverReady = false;
+      $btnConnect.disabled = true;
+      setServerStatus('Bağlantı kesildi, yeniden bağlanılıyor…', 'wait');
+      setTimeout(function() {
+        if (peer && !peer.destroyed) {
+          try { peer.reconnect(); } catch(e) { destroyAndReinit(); }
+        } else { destroyAndReinit(); }
+      }, 2000);
+    });
+
+    peer.on('connection', function(conn) { handleDataConnection(conn); });
+    peer.on('call', function(call) { handleIncomingCall(call); });
+  }
+
+  function destroyAndReinit() {
+    peerDestroyCount++;
+    if (peerDestroyCount > 10) {
+      setServerStatus('Sunucuya ulaşılamıyor', 'err');
+      toast('Sunucu bağlantısı kurulamadı. Sayfayı yenile.', 8000);
+      return;
+    }
+    clearInterval(keepaliveInterval);
+    if (peer) { try { peer.destroy(); } catch(e) {} }
+    var delay = Math.min(2000 * peerDestroyCount, 15000);
+    setTimeout(function() { initPeer(); }, delay);
+  }
+
+  function retryPeerInit() {
+    peerDestroyCount++;
+    if (peerDestroyCount > 10) return;
+    setTimeout(function() { initPeer(); }, 3000);
+  }
+
+  /* ── Data Connection ── */
+  function handleDataConnection(conn) {
+    if (currentConn && currentConn.open) { conn.close(); return; }
+    currentConn = conn;
+    remotePeerId = conn.peer;
+    isConnecting = false;
+    retryCount = 0;
+    clearTimeout(retryTimer);
+    clearTimeout(connectTimeout);
+
+    conn.on('open', function() {
+      setStatus('Bağlandı 💕', 'connected');
+      toast('Sevgilin bağlandı! 💕');
+      $btnConnect.style.display = 'none';
+      $btnDisc.style.display = '';
+      $remoteIn.disabled = true;
+      $btnConnect.disabled = false;
+      $btnConnect.textContent = '💕 Bağlan';
+    });
+    conn.on('close', function() { handleRemoteDisconnect(); });
+    conn.on('error', function() { handleRemoteDisconnect(); });
+  }
+
+  /* ── Connect with retry ── */
+  function attemptConnect(rid) {
+    if (currentConn && currentConn.open) return;
+    if (!serverReady) { toast('Sunucuya henüz bağlanılmadı…', 3000); return; }
+
+    isConnecting = true;
+    $btnConnect.disabled = true;
+    $btnConnect.textContent = '⏳ ' + (retryCount + 1) + '/' + maxRetries;
+    setStatus('Bağlanıyor… (' + (retryCount + 1) + '/' + maxRetries + ')', 'waiting');
+
+    remotePeerId = rid;
+    var conn;
+    try { conn = peer.connect(rid, { reliable: true }); }
+    catch(e) { retryOrFail(rid); return; }
+    if (!conn) { retryOrFail(rid); return; }
+
+    connectTimeout = setTimeout(function() {
+      if (currentConn && currentConn.open) return;
+      retryOrFail(rid);
+    }, 8000);
+
+    conn.on('open', function() {
+      clearTimeout(connectTimeout);
+      handleDataConnection(conn);
+      if (localCamStream) sendStream(localCamStream, 'camera');
+      if (localScreenStream) sendStream(localScreenStream, 'screen');
+    });
+    conn.on('error', function() {
+      clearTimeout(connectTimeout);
+      retryOrFail(rid);
+    });
+  }
+
+  function retryOrFail(rid) {
+    retryCount++;
+    if (retryCount < maxRetries) {
+      toast('Tekrar deneniyor… (' + (retryCount + 1) + '/' + maxRetries + ')', 2500);
+      retryTimer = setTimeout(function() { attemptConnect(rid); }, 2000 + retryCount * 1000);
+    } else {
+      toast('Bağlantı başarısız. Kodun doğru olduğundan ve karşı tarafın sayfayı açtığından emin ol.', 7000);
+      cancelConnecting();
+      setStatus('Bağlantı başarısız — tekrar dene', 'off');
+    }
+  }
+
+  function cancelConnecting() {
+    isConnecting = false; retryCount = 0; remotePeerId = null;
+    clearTimeout(retryTimer); clearTimeout(connectTimeout);
+    $btnConnect.disabled = false; $btnConnect.textContent = '💕 Bağlan';
+  }
+
+  function connectToRemote() {
+    var rid = $remoteIn.value.trim().toUpperCase();
+    if (!rid || rid.length < 4) { toast('Geçerli bir kod gir'); return; }
+    if (rid === myId) { toast('Kendine bağlanamazsın 😄'); return; }
+    if (isConnecting) { toast('Zaten deneniyor…'); return; }
+    if (!serverReady) { toast('"Sunucu bağlı ✓" yazısını bekle.', 4000); return; }
+
+    // Önce sunucudaki peer listesini kontrol et
+    setStatus('Karşı taraf kontrol ediliyor…', 'waiting');
+    $btnConnect.disabled = true;
+    $btnConnect.textContent = '🔍 Kontrol…';
+
+    checkPeerOnServer(rid, function(found, allPeers) {
+      if (found) {
+        console.log('✅ Peer sunucuda bulundu:', rid);
+        toast('Karşı taraf bulundu! Bağlanılıyor…', 2000);
+        retryCount = 0;
+        attemptConnect(rid);
+      } else {
+        console.log('❌ Peer sunucuda bulunamadı:', rid, 'Mevcut peerler:', allPeers);
+        $btnConnect.disabled = false;
+        $btnConnect.textContent = '💕 Bağlan';
+
+        if (allPeers.length === 0) {
+          toast('Sunucuda hiç peer yok. Karşı tarafın sayfayı açtığından emin ol.', 6000);
+          setStatus('Sunucuda kimse yok — karşı taraf sayfayı açmalı', 'off');
+        } else if (allPeers.length === 1) {
+          toast('Kod yanlış! Sunucuda sadece sen varsın. Karşı tarafın sayfayı açmasını bekle.', 6000);
+          setStatus('Sadece sen bağlısın — karşı taraf henüz girmemiş', 'off');
+        } else {
+          toast('Bu kod sunucuda bulunamadı. Kodu kontrol et. Sunucudaki peerler: ' + allPeers.join(', '), 8000);
+          setStatus('Kod bulunamadı — doğru kodu gir', 'off');
+        }
+      }
+    });
+  }
+
+  /* ── Disconnect ── */
+  function handleRemoteDisconnect() {
+    currentConn = null; remotePeerId = null; outgoingCalls = [];
+    $btnConnect.style.display = ''; $btnDisc.style.display = 'none';
+    $remoteIn.disabled = false;
+    $remoteScr.srcObject = null; $remoteScr.style.display = 'none';
+    $remoteCam.srcObject = null; $remotePip.classList.remove('active');
+    document.querySelector('#remotePipWrap .pip-video').style.display = 'none';
+    $placeholder.style.display = '';
+    setStatus('Bağlantı kesildi', 'off');
+    toast('Bağlantı kesildi');
+  }
+
+  function disconnect() {
+    outgoingCalls.forEach(function(c) { try { c.close(); } catch(e){} });
+    outgoingCalls = [];
+    if (currentConn) { try { currentConn.close(); } catch(e){} }
+    handleRemoteDisconnect();
+  }
+
+  /* ── Media Calls ── */
+  function sendStream(stream, label) {
+    if (!remotePeerId || !peer || peer.destroyed) return;
+    var call;
+    try { call = peer.call(remotePeerId, stream, { metadata: { type: label } }); }
+    catch(e) { return; }
+    if (!call) return;
+    outgoingCalls.push(call);
+    call.on('stream', function(rs) { attachRemoteStream(rs, label); });
+    call.on('close', function() { outgoingCalls = outgoingCalls.filter(function(c) { return c !== call; }); });
+  }
+
+  function handleIncomingCall(call) {
+    var answerStream = localCamStream || localScreenStream || createSilentStream();
+    call.answer(answerStream);
+    call.on('stream', function(rs) {
+      var type = (call.metadata && call.metadata.type) || guessStreamType(rs);
+      attachRemoteStream(rs, type);
+      if (!currentConn || !currentConn.open) {
+        remotePeerId = call.peer;
+        setStatus('Bağlandı 💕', 'connected');
+        $btnConnect.style.display = 'none'; $btnDisc.style.display = '';
+        $remoteIn.disabled = true;
+      }
+    });
+  }
+
+  function guessStreamType(stream) {
+    var vt = stream.getVideoTracks()[0];
+    if (!vt) return 'camera';
+    var s = vt.getSettings();
+    if (s.displaySurface || (s.width && s.width > 1000)) return 'screen';
+    return 'camera';
+  }
+
+  function attachRemoteStream(stream, type) {
+    if (type === 'screen') {
+      $remoteScr.srcObject = stream; $remoteScr.style.display = 'block';
+      $placeholder.style.display = 'none';
+      var vt = stream.getVideoTracks()[0];
+      if (vt) vt.addEventListener('ended', function() {
+        $remoteScr.srcObject = null; $remoteScr.style.display = 'none';
+        if (!$remoteCam.srcObject) $placeholder.style.display = '';
+      });
+    } else {
+      $remoteCam.srcObject = stream; $remoteCam.style.display = 'block';
+      $remotePip.classList.add('active');
+    }
+  }
+
+  function createSilentStream() {
+    var ctx = new AudioContext();
+    var osc = ctx.createOscillator();
+    var dst = ctx.createMediaStreamDestination();
+    osc.connect(dst); osc.start();
+    dst.stream.getAudioTracks()[0].enabled = false;
+    return dst.stream;
+  }
+
+  /* ── Camera ── */
+  function toggleCamera() {
+    if (cameraOn) {
+      if (localCamStream) { localCamStream.getTracks().forEach(function(t){t.stop();}); localCamStream = null; }
+      $localVid.srcObject = null; $localVid.style.display = 'none';
+      $localPip.classList.remove('active');
+      $btnCamera.textContent = '🎥 Kamerayı Aç'; cameraOn = false;
+      toast('Kamera kapatıldı'); return;
+    }
+    navigator.mediaDevices.getUserMedia({
+      video: { width: {ideal:640}, height: {ideal:480}, facingMode:'user' },
+      audio: { echoCancellation:true, noiseSuppression:true, autoGainControl:true }
+    }).then(function(stream) {
+      localCamStream = stream;
+      $localVid.srcObject = stream; $localVid.style.display = 'block';
+      $localPip.classList.add('active');
+      $btnCamera.textContent = '📷 Kamerayı Kapat'; cameraOn = true;
+      if (isMuted) stream.getAudioTracks().forEach(function(t){t.enabled=false;});
+      if (remotePeerId) sendStream(stream, 'camera');
+      toast('Kamera açıldı');
+    }).catch(function() { toast('Kamera erişimi reddedildi'); });
+  }
+
+  /* ── Screen Share ── */
+  function toggleScreen() {
+    if (screenOn) {
+      if (localScreenStream) { localScreenStream.getTracks().forEach(function(t){t.stop();}); localScreenStream=null; }
+      $btnScreen.textContent = '🖥️ Ekran Paylaş'; screenOn = false;
+      toast('Ekran paylaşımı durduruldu'); return;
+    }
+    var q = getQualityConstraints();
+    navigator.mediaDevices.getDisplayMedia({
+      video: { width:q.width, height:q.height, frameRate:q.frameRate, cursor:'always' },
+      audio: { echoCancellation:true, noiseSuppression:true, autoGainControl:true }
+    }).then(function(stream) {
+      localScreenStream = stream; screenOn = true;
+      $btnScreen.textContent = '⏹️ Paylaşımı Durdur';
+      stream.getVideoTracks()[0].addEventListener('ended', function() {
+        localScreenStream=null; $btnScreen.textContent='🖥️ Ekran Paylaş'; screenOn=false;
+        toast('Ekran paylaşımı durduruldu');
+      });
+      if (remotePeerId) sendStream(stream, 'screen');
+      toast('Ekran paylaşımı başladı');
+    }).catch(function(err) {
+      if (err.name !== 'NotAllowedError') toast('Ekran paylaşımı başarısız');
+    });
+  }
+
+  /* ── Mute ── */
+  function toggleMute() {
+    isMuted = !isMuted;
+    if (localCamStream) localCamStream.getAudioTracks().forEach(function(t){t.enabled=!isMuted;});
+    $btnMute.textContent = isMuted ? '🔊 Sesi Aç' : '🔇 Sessiz';
+    toast(isMuted ? 'Mikrofon kapatıldı' : 'Mikrofon açıldı');
+  }
+
+  /* ── Copy ── */
+  function copyId() {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(myId).then(function(){toast('Kod kopyalandı! 💕');}).catch(fbCopy);
+    } else fbCopy();
+  }
+  function fbCopy() {
+    var ta=document.createElement('textarea'); ta.value=myId;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); toast('Kod kopyalandı! 💕');
+  }
+
+  /* ── Events ── */
+  $btnConnect.addEventListener('click', connectToRemote);
+  $btnDisc.addEventListener('click', disconnect);
+  $btnCamera.addEventListener('click', toggleCamera);
+  $btnScreen.addEventListener('click', toggleScreen);
+  $btnMute.addEventListener('click', toggleMute);
+  $btnCopy.addEventListener('click', copyId);
+  $myId.addEventListener('click', copyId);
+  $remoteIn.addEventListener('keydown', function(e){ if(e.key==='Enter') connectToRemote(); });
+  $remoteIn.addEventListener('input', function(){ $remoteIn.value=$remoteIn.value.toUpperCase(); });
+
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && peer && peer.disconnected && !peer.destroyed) {
+      setServerStatus('Yeniden bağlanılıyor…', 'wait');
+      try { peer.reconnect(); } catch(e) { destroyAndReinit(); }
+    }
+  });
+
+  /* ── Start ── */
+  initPeer();
+
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "cilek",
+  "version": "1.0.0",
+  "description": "Çilek — Özel WebRTC Görüntülü Konuşma Odası",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "peer": "^1.0.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
